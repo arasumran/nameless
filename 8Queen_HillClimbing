@@ -1,0 +1,289 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+public class QueensBoard {
+
+	public static int TOTAL_QUEENS = 8;
+	private int[][] tahta;
+	private int[] vezirPozisyon;
+
+	public static void main(String[] args) {
+
+		boolean climb = true;
+		int tırmanmaSayi = 0;
+		
+		// 5 restarts
+		while (climb) {
+			QueensBoard tahta = new QueensBoard(
+					new int[TOTAL_QUEENS][TOTAL_QUEENS], new int[8]);
+
+			// randomly place queens
+			tahta.VezirYerleri();
+			//System.out.println("antrenman #: " + (climbCount+1));
+			System.out.println("Orjinal tahta:");
+			tahta.TahtaYazdır();
+			System.out.println("# vezirin diğer vezirlere olan saldırıları: "
+					+ tahta.h() + "\n");
+
+			// score to be compared against
+			int localMin = tahta.h();
+			boolean best = false;
+			// array to store best queen positions by row (array index is column)
+			int[] EniyiVezirPozisyon = new int[8];
+
+			// iterate through each column 
+			for (int j = 0; j < tahta.tahta.length; j++) {
+				System.out.println("SUTUN uzerınde tekrarlanma " + j + ":");
+				best = false;
+				//  iterate through each row
+				for (int i = 0; i < tahta.tahta.length; i++) {
+					
+					// skip score calculated by original board
+					if (i != tahta.vezirPozisyon[j]) {
+						
+						// move queen 
+						tahta.VezirTasi(i, j);
+						tahta.TahtaYazdır();
+						System.out.println();
+						// calculate score, if best seen then store queen position
+						if (tahta.h() < localMin) {
+							best = true;
+							localMin = tahta.h();
+							EniyiVezirPozisyon[j] = i;
+						}
+						// reset to original queen position
+						tahta.ResetVezir(i, j);
+
+					}
+				}
+				
+				// change 2 back to 1
+				tahta.ResetTahta(j);
+				if (best) {
+					// if a best score was found, place queen in this position
+					tahta.EniyiVezirYeri(j, EniyiVezirPozisyon[j]);
+					System.out.println("en iyi tahta dizilimi: ");
+					tahta.TahtaYazdır();
+					System.out
+							.println("# Birbirlerine saldıran kraliçe çiftleri: "
+									+ tahta.h() + "\n");
+				} else {
+					System.out.println("DAHA İYİ BULUNAMADI.");
+					tahta.TahtaYazdır();
+					System.out
+							.println("# Birbirlerine saldıran kraliçe çiftleri: "
+									+ tahta.h() + "\n");
+				}
+			}
+
+			// if score = 0, hill climbing has solved problem
+			if (tahta.h() == 0)
+				climb = false;
+
+			tırmanmaSayi++;
+
+			// only 5 restarts
+			if (tırmanmaSayi == 6) {
+				climb = false;
+			}
+			System.out.println("yapıldı.." + (tırmanmaSayi-1) + " restart.");
+		}
+
+	}
+
+	public QueensBoard(int[][] tahta, int[] positions) {
+
+		this.tahta = tahta;
+		this.vezirPozisyon = positions;
+
+	}
+
+	private int[] generateQueens() {
+
+		List<Integer> randomPos = new ArrayList<Integer>();
+
+		Random r = new Random();
+		for (int i = 0; i < TOTAL_QUEENS; i++) {
+			randomPos.add(r.nextInt(8));
+		}
+
+		int[] RandomPozisyon = new int[TOTAL_QUEENS];
+
+		for (int i = 0; i < randomPos.size(); i++) {
+			RandomPozisyon[i] = randomPos.get(i);
+		}
+
+		return RandomPozisyon;
+	}
+
+	public void VezirYerleri() {
+
+		vezirPozisyon = generateQueens();
+
+		for (int i = 0; i < tahta.length; i++) {
+			tahta[vezirPozisyon[i]][i] = 1;
+		}
+
+	}
+
+	public int h() {
+
+		int totalPairs = 0;
+
+		// sutunları kontrol etmek için
+		for (int i = 0; i < tahta.length; i++) {
+			ArrayList<Boolean> pairs = new ArrayList<Boolean>();
+			for (int j = 0; j < tahta[i].length; j++) {
+
+				if (tahta[i][j] == 1) {
+					pairs.add(true);
+				}
+
+			}
+			if (pairs.size() != 0)
+				totalPairs = totalPairs + (pairs.size() - 1);
+		}
+
+		//sol ustten kosegenlerı kontrol etmek için
+		int rows = tahta.length;
+		int cols = tahta.length;
+		int maxTop = rows + cols - 2;
+
+		for (int top = 0; top <= maxTop; top++) {
+			ArrayList<Boolean> pairs = new ArrayList<Boolean>();
+			for (int i = 0; i < rows; i++) {
+				for (int j = 0; j < cols; j++) {
+					if (i + j - top == 0) {
+						if (tahta[i][j] == 1) {
+							pairs.add(true);
+						}
+					}
+				}
+
+			}
+			if (pairs.size() != 0)
+				totalPairs = totalPairs + (pairs.size() - 1);
+		}
+
+		// çapraz diagonal yansımaları kontrol etmek için. brute force ıle bişey bulunamadı ..
+		int pairs = checkMirrorDiagonal();
+
+		return totalPairs + pairs;
+	}
+	
+	private int checkMirrorDiagonal() {
+
+		int[] b1 = { tahta[7][0] };
+		int[] b2 = { tahta[7][1], tahta[6][0] };
+		int[] b3 = { tahta[7][2], tahta[6][1], tahta[5][0] };
+		int[] b4 = { tahta[7][3], tahta[6][2], tahta[5][1], tahta[4][0] };
+		int[] b5 = { tahta[7][4], tahta[6][3], tahta[5][2], tahta[4][1],
+				tahta[3][0] };
+		int[] b6 = { tahta[7][5], tahta[6][4], tahta[5][3], tahta[4][2],
+				tahta[3][1], tahta[2][0] };
+		int[] b7 = { tahta[7][6], tahta[6][5], tahta[5][4], tahta[4][3],
+				tahta[3][2], tahta[2][1], tahta[1][0] };
+		int[] b8 = { tahta[7][7], tahta[6][6], tahta[5][5], tahta[4][4],
+				tahta[3][3], tahta[2][2], tahta[1][1], tahta[0][0] };
+		int[] b9 = { tahta[6][7], tahta[5][6], tahta[4][5], tahta[3][4],
+				tahta[2][3], tahta[1][2], tahta[0][1] };
+		int[] b10 = { tahta[5][7], tahta[4][6], tahta[3][5], tahta[2][4],
+				tahta[1][3], tahta[0][2] };
+		int[] b11 = { tahta[4][7], tahta[3][6], tahta[2][5], tahta[1][4],
+				tahta[0][3] };
+		int[] b12 = { tahta[3][7], tahta[2][6], tahta[1][5], tahta[0][4] };
+		int[] b13 = { tahta[2][7], tahta[1][6], tahta[0][5] };
+		int[] b14 = { tahta[1][7], tahta[0][6] };
+		int[] b15 = { tahta[0][7] };
+
+		int toplamlar = 0;
+
+		toplamlar += YataydaKontrol(b1);
+		toplamlar += YataydaKontrol(b2);
+		toplamlar += YataydaKontrol(b3);
+		toplamlar += YataydaKontrol(b4);
+		toplamlar += YataydaKontrol(b5);
+		toplamlar += YataydaKontrol(b6);
+		toplamlar += YataydaKontrol(b7);
+		toplamlar += YataydaKontrol(b8);
+		toplamlar += YataydaKontrol(b9);
+		toplamlar += YataydaKontrol(b10);
+		toplamlar += YataydaKontrol(b11);
+		toplamlar += YataydaKontrol(b12);
+		toplamlar += YataydaKontrol(b13);
+		toplamlar += YataydaKontrol(b14);
+		toplamlar += YataydaKontrol(b15);
+
+		return toplamlar;
+
+	}
+
+	public void VezirTasi(int row, int col) {
+
+		// orjinal kraliçenın 2 olarak ayarlanması ve  pointer gorevı gosterilmesı 
+		tahta[vezirPozisyon[col]][col] = 2;
+
+		tahta[row][col] = 1;
+
+	}
+
+
+
+	private int YataydaKontrol(int[] b) {
+
+		int totalPairs = 0;
+
+		ArrayList<Boolean> pairs = new ArrayList<Boolean>();
+		for (int i = 0; i < b.length; i++) {
+			if (b[i] == 1)
+				pairs.add(true);
+
+		}
+
+		if (pairs.size() != 0)
+			totalPairs = (pairs.size() - 1);
+
+		return totalPairs;
+	}
+
+	public void ResetVezir(int row, int col) {
+
+		if (tahta[row][col] == 1)
+			tahta[row][col] = 0;
+	}
+
+	public void ResetTahta(int col) {
+
+		for (int i = 0; i < tahta.length; i++) {
+			if (tahta[i][col] == 2)
+				tahta[i][col] = 1;
+		}
+	}
+
+	public void EniyiVezirYeri(int col, int queenPos) {
+
+		for (int i = 0; i < tahta.length; i++) {
+			if (tahta[i][col] == 1)
+				tahta[i][col] = 2;
+
+		}
+		tahta[queenPos][col] = 1;
+		for (int i = 0; i < tahta.length; i++) {
+			if (tahta[i][col] == 2)
+				tahta[i][col] = 0;
+
+		}
+	}
+
+	public void TahtaYazdır() {
+
+		for (int i = 0; i < tahta.length; i++) {
+			for (int j = 0; j < tahta[i].length; j++) {
+				System.out.print(tahta[i][j] + " ");
+			}
+			System.out.println();
+		}
+	}
+
+}
